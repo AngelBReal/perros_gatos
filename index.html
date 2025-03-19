@@ -48,12 +48,12 @@
       }
       
       .dog-style {
-        background-color: #ffc107; /* Yellow */
+        background-color: #ffc107;
         color: black;
       }
       
       .cat-style {
-        background-color: #007bff; /* Blue */
+        background-color: #007bff;
         color: white;
       }
     </style>
@@ -93,28 +93,35 @@
 
       (async () => {
           console.log("Cargando modelo...");
-          modelo = await tf.loadLayersModel("model.json");
-          console.log("Modelo cargado...");
-          mostrarCamara();
+          try {
+              modelo = await tf.loadLayersModel("model.json");
+              console.log("Modelo cargado correctamente.");
+              mostrarCamara();
+          } catch (error) {
+              console.error("Error cargando el modelo: ", error);
+              alert("No se pudo cargar el modelo de IA.");
+          }
       })();
 
-      function mostrarCamara() {
-          var opciones = { audio: false, video: { facingMode: facingMode, width: size, height: size } };
+      async function mostrarCamara() {
+          var opciones = { 
+              audio: false, 
+              video: { facingMode: facingMode, width: size, height: size } 
+          };
 
-          if(navigator.mediaDevices.getUserMedia) {
-              navigator.mediaDevices.getUserMedia(opciones)
-                  .then(function(stream) {
-                      currentStream = stream;
-                      video.srcObject = currentStream;
-                      procesarCamara();
-                      predecir();
-                  })
-                  .catch(function(err) {
-                      alert("No se pudo utilizar la cámara :(");
-                      console.log(err);
-                  });
-          } else {
-              alert("Tu navegador no soporta el uso de la cámara.");
+          try {
+              if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                  throw new Error("Tu navegador no soporta acceso a la cámara.");
+              }
+
+              const stream = await navigator.mediaDevices.getUserMedia(opciones);
+              currentStream = stream;
+              video.srcObject = stream;
+              procesarCamara();
+              predecir();
+          } catch (err) {
+              console.error("No se pudo acceder a la cámara:", err);
+              alert("No se pudo acceder a la cámara. Por favor, revisa los permisos.");
           }
       }
 
@@ -153,7 +160,6 @@
 
               var clases = ['Gato', 'Perro'];
               
-              // Set result text and update image
               if (mayorIndice === 1) {
                   resultadoDiv.innerHTML = "Dawg in Me 🐶";
                   resultadoDiv.classList.remove("cat-style");
