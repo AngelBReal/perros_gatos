@@ -134,27 +134,45 @@
               })
       }
 
-        let lastPrediction = null;
-        function predecir() {
-            if (modelo != null) {
-                // ... (processing code remains the same)
-                var resultados = modelo.predict(tensor4).dataSync();
-                var mayorIndice = resultados.indexOf(Math.max.apply(null, resultados));
-                var clases = ['Gato', 'Perro'];
-                var prediction = clases[mayorIndice];
-                if (prediction !== lastPrediction) {
-                    lastPrediction = prediction;
-                    var resultadoDiv = document.getElementById("resultado");
-                    if (prediction === 'Gato') {
-                        resultadoDiv.innerHTML = "<img src='cat_in_me_result.webp' alt='Gato' style='max-width:100%;'>";
-                    } else {
-                        resultadoDiv.innerHTML = "<img src='dwag_in_me_result.jpg' alt='Perro' style='max-width:100%;'>";
-                    }
-                }
-            }
-            setTimeout(predecir, 150);
-        }
+      function predecir() {
+          if (modelo != null) {
+              //Pasar canvas a version 150x150
+              resample_single(canvas, 150, 150, othercanvas);
 
+              var ctx2 = othercanvas.getContext("2d");
+
+              var imgData = ctx2.getImageData(0,0,150,150);
+              var arr = []; //El arreglo completo
+              var arr150 = []; //Al llegar a arr150 posiciones se pone en 'arr' como un nuevo indice
+              for (var p=0, i=0; p < imgData.data.length; p+=4) {
+                  var red = imgData.data[p]/255;
+                  var green = imgData.data[p+1]/255;
+                  var blue = imgData.data[p+2]/255;
+                  arr150.push([red, green, blue]); //Agregar al arr150 y normalizar a 0-1. Aparte queda dentro de un arreglo en el indice 0... again
+                  if (arr150.length == 150) {
+                      arr.push(arr150);
+                      arr150 = [];
+                  }
+              }
+
+              arr = [arr]; //Meter el arreglo en otro arreglo por que si no tio tensorflow se enoja >:(
+              //Nah basicamente Debe estar en un arreglo nuevo en el indice 0, por ser un tensor4d en forma 1, 150, 150, 1
+              var tensor4 = tf.tensor4d(arr);
+              var resultados = modelo.predict(tensor4).dataSync();
+              var mayorIndice = resultados.indexOf(Math.max.apply(null, resultados));
+
+              var clases = ['Gato', 'Perro'];
+              console.log("Prediccion", clases[mayorIndice]);
+              var resultadoDiv = document.getElementById("resultado");
+              if (clases[mayorIndice] === 'Gato') {
+                resultadoDiv.innerHTML = "<img src='cat_in_me_result.webp' alt='Gato' style='max-width:100%;'>";
+              } else {
+                resultadoDiv.innerHTML = "<img src='dwag_in_me_result.jpg' alt='Perro' style='max-width:100%;'>";
+              }
+          }
+
+          setTimeout(predecir, 150);
+      }
 
       function procesarCamara() {
           
