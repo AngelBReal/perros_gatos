@@ -3,117 +3,74 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="dwag_in_me.jpg">
-    <title>Perros y Gatos - Clasificador Divertido</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <title>Perros y Gatos</title>
 
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <style>
-      body {
-        background-color: #f8f9fa;
-      }
-      
       #resultado {
-        font-weight: bold;
-        font-size: 2rem;
         text-align: center;
-        margin-top: 20px;
-        padding: 10px;
-        border-radius: 10px;
       }
-
       .canvas-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+          margin: 0 auto;
+          border: 1px solid #ccc;
       }
-
-      .result-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-top: 20px;
-      }
-
-      #image-result {
-        max-width: 250px;
+      #resultado img {
+        width: 200px;
+        height: auto;
         margin-top: 10px;
-        border-radius: 10px;
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-      }
-
-      #video {
-        display: none;
-      }
-      
-      .dog-style {
-        background-color: #ffc107; /* Yellow */
-        color: black;
-      }
-      
-      .cat-style {
-        background-color: #007bff; /* Blue */
-        color: white;
       }
     </style>
   </head>
-
   <body>
-    <main class="container text-center mt-4">
-      <h1 class="fw-bold">🐶 Perros y Gatos 🐱</h1>
-      <p class="lead">Clasificación en tiempo real usando la cámara y TensorFlow.js</p>
-
-      <div class="canvas-container">
-        <canvas id="canvas" width="400" height="400" style="border: 2px solid #007bff; border-radius: 10px;"></canvas>
-        <video id="video" autoplay playsinline></video>
-        <button class="btn btn-primary mt-3" id="cambiar-camara" onclick="cambiarCamara();">Cambiar Cámara</button>
+    <main>
+      <div class="px-4 py-2 my-2 text-center border-bottom">
+        <img class="d-block mx-auto mb-2" src="LogotipoV2-Simple.png" alt="" width="80" height="80">
+        <h1 class="display-5 fw-bold">Perros y gatos</h1>
+        <div class="col-lg-6 mx-auto">
+          <p class="lead mb-0">Clasificación de imágenes (Perro o Gato) usando la cámara web con Tensorflow.js</p>
+        </div>
       </div>
 
-      <div class="result-container">
-        <div id="resultado" class="dog-style">Esperando predicción...</div>
-        <img id="image-result" src="dwag_in_me.jpg" alt="Resultado" style="display: none;">
+      <div class="container mt-5">
+        <div class="row">
+          <div class="col-12 col-md-4 offset-md-4 text-center">
+            <video id="video" playsinline autoplay style="width: 1px;"></video>
+            <button class="btn btn-primary mb-2" id="cambiar-camara" onclick="cambiarCamara();">Cambiar cámara</button>
+            <canvas id="canvas" width="400" height="400" style="max-width: 100%;"></canvas>
+            <canvas id="othercanvas" width="150" height="150" style="display: none"></canvas>
+            <div id="resultado">
+              <img id="resultado-img" src="" alt="Resultado" style="display: none;">
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 
-    <!-- Bootstrap and TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
-
-    <script type="text/javascript">
+    <script>
       var canvas = document.getElementById("canvas");
       var video = document.getElementById("video");
       var ctx = canvas.getContext("2d");
-      var resultadoDiv = document.getElementById("resultado");
-      var imageResult = document.getElementById("image-result");
       var modelo = null;
       var size = 400;
       var currentStream = null;
-      var facingMode = "user"; 
+      var facingMode = "user";
+      var imagenes = ["cat_in_me_result.webp", "dwag_in_me_result.jpg"];
 
-      // Load camera immediately on page load
-      window.onload = function() {
-          mostrarCamara(); // Open camera first
-          cargarModelo();   // Load model separately
-      };
-
-      async function cargarModelo() {
+      (async () => {
           console.log("Cargando modelo...");
-          try {
-              modelo = await tf.loadLayersModel("model.json");
-              console.log("Modelo cargado correctamente.");
-          } catch (error) {
-              console.error("Error cargando el modelo: ", error);
-              alert("No se pudo cargar el modelo de IA.");
-          }
+          modelo = await tf.loadLayersModel("model.json");
+          console.log("Modelo cargado...");
+      })();
+
+      window.onload = function() {
+          mostrarCamara();
       }
 
       function mostrarCamara() {
-          var opciones = {
-              audio: false,
-              video: { facingMode: facingMode, width: size, height: size }
-          };
-
+          var opciones = { audio: false, video: { facingMode: "user", width: size, height: size } };
           if(navigator.mediaDevices.getUserMedia) {
               navigator.mediaDevices.getUserMedia(opciones)
                   .then(function(stream) {
@@ -123,11 +80,11 @@
                       predecir();
                   })
                   .catch(function(err) {
-                      console.error("No se pudo acceder a la cámara:", err);
-                      alert("No se pudo utilizar la cámara. Revisa los permisos.");
+                      alert("No se pudo utilizar la cámara :(");
+                      console.log(err);
                   });
           } else {
-              alert("Tu navegador no soporta getUserMedia");
+              alert("No existe la función getUserMedia...");
           }
       }
 
@@ -135,54 +92,39 @@
           if (currentStream) {
               currentStream.getTracks().forEach(track => track.stop());
           }
-
-          facingMode = facingMode === "user" ? "environment" : "user";
-
+          facingMode = facingMode == "user" ? "environment" : "user";
           mostrarCamara();
       }
 
       function predecir() {
-          if (modelo !== null) {
-              ctx.drawImage(video, 0, 0, size, size, 0, 0, size, size);
-
-              var imgData = ctx.getImageData(0, 0, 400, 400);
+          if (modelo != null) {
+              resample_single(canvas, 150, 150, othercanvas);
+              var ctx2 = othercanvas.getContext("2d");
+              var imgData = ctx2.getImageData(0,0,150,150);
               var arr = [];
               var arr150 = [];
-              for (var p = 0; p < imgData.data.length; p += 4) {
-                  var red = imgData.data[p] / 255;
-                  var green = imgData.data[p + 1] / 255;
-                  var blue = imgData.data[p + 2] / 255;
+              for (var p=0, i=0; p < imgData.data.length; p+=4) {
+                  var red = imgData.data[p]/255;
+                  var green = imgData.data[p+1]/255;
+                  var blue = imgData.data[p+2]/255;
                   arr150.push([red, green, blue]);
                   if (arr150.length == 150) {
                       arr.push(arr150);
                       arr150 = [];
                   }
               }
-
               arr = [arr];
               var tensor4 = tf.tensor4d(arr);
               var resultados = modelo.predict(tensor4).dataSync();
               var mayorIndice = resultados.indexOf(Math.max.apply(null, resultados));
-
-              if (mayorIndice === 1) {
-                  resultadoDiv.innerHTML = "Dawg in Me 🐶";
-                  resultadoDiv.classList.remove("cat-style");
-                  resultadoDiv.classList.add("dog-style");
-                  imageResult.src = "dwag_in_me_result.jpg";
-              } else {
-                  resultadoDiv.innerHTML = "Not Dawg in Me 🐱";
-                  resultadoDiv.classList.remove("dog-style");
-                  resultadoDiv.classList.add("cat-style");
-                  imageResult.src = "cat_in_me_result.webp";
-              }
-
-              imageResult.style.display = "block";
+              document.getElementById("resultado-img").src = imagenes[mayorIndice];
+              document.getElementById("resultado-img").style.display = "block";
           }
-
           setTimeout(predecir, 150);
       }
 
       function procesarCamara() {
+          var ctx = canvas.getContext("2d");
           ctx.drawImage(video, 0, 0, size, size, 0, 0, size, size);
           setTimeout(procesarCamara, 20);
       }
