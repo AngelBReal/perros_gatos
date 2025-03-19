@@ -48,12 +48,12 @@
       }
       
       .dog-style {
-        background-color: #ffc107;
+        background-color: #ffc107; /* Yellow */
         color: black;
       }
       
       .cat-style {
-        background-color: #007bff;
+        background-color: #007bff; /* Blue */
         color: white;
       }
     </style>
@@ -91,37 +91,43 @@
       var currentStream = null;
       var facingMode = "user"; 
 
-      (async () => {
+      // Load camera immediately on page load
+      window.onload = function() {
+          mostrarCamara(); // Open camera first
+          cargarModelo();   // Load model separately
+      };
+
+      async function cargarModelo() {
           console.log("Cargando modelo...");
           try {
               modelo = await tf.loadLayersModel("model.json");
               console.log("Modelo cargado correctamente.");
-              mostrarCamara();
           } catch (error) {
               console.error("Error cargando el modelo: ", error);
               alert("No se pudo cargar el modelo de IA.");
           }
-      })();
+      }
 
-      async function mostrarCamara() {
-          var opciones = { 
-              audio: false, 
-              video: { facingMode: facingMode, width: size, height: size } 
+      function mostrarCamara() {
+          var opciones = {
+              audio: false,
+              video: { facingMode: facingMode, width: size, height: size }
           };
 
-          try {
-              if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                  throw new Error("Tu navegador no soporta acceso a la cámara.");
-              }
-
-              const stream = await navigator.mediaDevices.getUserMedia(opciones);
-              currentStream = stream;
-              video.srcObject = stream;
-              procesarCamara();
-              predecir();
-          } catch (err) {
-              console.error("No se pudo acceder a la cámara:", err);
-              alert("No se pudo acceder a la cámara. Por favor, revisa los permisos.");
+          if(navigator.mediaDevices.getUserMedia) {
+              navigator.mediaDevices.getUserMedia(opciones)
+                  .then(function(stream) {
+                      currentStream = stream;
+                      video.srcObject = currentStream;
+                      procesarCamara();
+                      predecir();
+                  })
+                  .catch(function(err) {
+                      console.error("No se pudo acceder a la cámara:", err);
+                      alert("No se pudo utilizar la cámara. Revisa los permisos.");
+                  });
+          } else {
+              alert("Tu navegador no soporta getUserMedia");
           }
       }
 
@@ -158,8 +164,6 @@
               var resultados = modelo.predict(tensor4).dataSync();
               var mayorIndice = resultados.indexOf(Math.max.apply(null, resultados));
 
-              var clases = ['Gato', 'Perro'];
-              
               if (mayorIndice === 1) {
                   resultadoDiv.innerHTML = "Dawg in Me 🐶";
                   resultadoDiv.classList.remove("cat-style");
